@@ -4,14 +4,21 @@ mod snake;
 mod grid;
 
 use snake::{Snake, Direction};
-use grid::Grid;
+use grid::{Grid, GRID_WIDTH, GRID_HEIGHT};
+
+// Generate random food position
+fn random_food() -> (i32, i32) {
+    (
+        macroquad::rand::gen_range(0, GRID_WIDTH),
+        macroquad::rand::gen_range(0, GRID_HEIGHT),
+    )
+}
 
 #[macroquad::main("Snake")]
 async fn main() {
     let mut snake = Snake::new(10, 10);
+    let mut food = random_food();
 
-    let mut prev_x = snake.x;
-    let mut prev_y = snake.y;
     let mut next_direction = snake.direction;
 
     let mut move_timer = 0.0;
@@ -41,31 +48,43 @@ async fn main() {
             move_timer -= move_delay;
 
             snake.update_direction(next_direction);
-
-            prev_x = snake.x;
-            prev_y = snake.y;
-
             snake.step();
+
+            // --- Food collision ---
+            if snake.head_position() == food {
+                snake.grow();
+                food = random_food();
+            }
         }
 
         // --- Grid ---
         let grid = Grid::compute();
         grid.draw();
 
-        // --- Interpolation ---
-        let t = (move_timer / move_delay).min(1.0);
+        // --- Draw snake ---
+        for (i, (x, y)) in snake.body.iter().enumerate() {
+            let (px, py) = grid.to_screen(*x as f32, *y as f32);
 
-        let interp_x = prev_x as f32 + (snake.x - prev_x) as f32 * t;
-        let interp_y = prev_y as f32 + (snake.y - prev_y) as f32 * t;
+            let color = if i == 0 { GREEN } else { DARKGREEN };
 
-        let (px, py) = grid.to_screen(interp_x, interp_y);
+            draw_rectangle(
+                px + 2.0,
+                py + 2.0,
+                grid.cell_size - 4.0,
+                grid.cell_size - 4.0,
+                color,
+            );
+        }
+
+        // --- Draw food ---
+        let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
 
         draw_rectangle(
-            px + 2.0,
-            py + 2.0,
+            fx + 2.0,
+            fy + 2.0,
             grid.cell_size - 4.0,
             grid.cell_size - 4.0,
-            GREEN,
+            RED,
         );
 
         next_frame().await;
