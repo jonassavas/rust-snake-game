@@ -14,14 +14,19 @@ fn random_food() -> (i32, i32) {
     )
 }
 
+fn reset_game() -> (Snake, (i32, i32), Direction, f32) {
+    let snake = Snake::new(10, 10);
+    let food = random_food();
+    let next_direction = Direction::Right;
+    let move_timer = 0.0;
+
+    (snake, food, next_direction, move_timer)
+}
+
 #[macroquad::main("Snake")]
 async fn main() {
-    let mut snake = Snake::new(10, 10);
-    let mut food = random_food();
+    let (mut snake, mut food, mut next_direction, mut move_timer) = reset_game(); 
 
-    let mut next_direction = snake.direction;
-
-    let mut move_timer = 0.0;
     let move_delay = 0.08;
 
     loop {
@@ -51,7 +56,16 @@ async fn main() {
 
             if snake.step(GRID_WIDTH, GRID_HEIGHT) {
                 println!("Game Over!");
-                break;
+
+                next_frame().await; // 1 frame pause
+
+                let (s, f, d, t) = reset_game();
+                snake = s;
+                food = f;
+                next_direction = d;
+                move_timer = t;
+
+                continue;
             } 
 
             // --- Food collision ---
