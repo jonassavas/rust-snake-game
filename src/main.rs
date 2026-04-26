@@ -48,7 +48,11 @@ async fn main() {
             move_timer -= move_delay;
 
             snake.update_direction(next_direction);
-            snake.step();
+
+            if snake.step(GRID_WIDTH, GRID_HEIGHT) {
+                println!("Game Over!");
+                break;
+            } 
 
             // --- Food collision ---
             if snake.head_position() == food {
