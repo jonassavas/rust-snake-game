@@ -35,7 +35,7 @@ fn reset_game() -> (Snake, (i32, i32), Direction, f32, i32) {
 async fn main() {
     let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game(); 
 
-    let move_delay = 0.08;
+    let base_delay = 0.10;
 
     loop {
         clear_background(Color::from_rgba(20, 20, 20, 255));
@@ -56,6 +56,7 @@ async fn main() {
 
         // --- Movement ---
         move_timer += get_frame_time();
+        let move_delay = (base_delay - score as f32 * 0.0035).max(0.04);
 
         while move_timer >= move_delay {
             move_timer -= move_delay;
@@ -67,12 +68,12 @@ async fn main() {
 
                 next_frame().await; // 1 frame pause
 
-                let (s, f, d, t, p) = reset_game();
+                let (s, f, d, t, sc) = reset_game();
                 snake = s;
                 food = f;
                 next_direction = d;
                 move_timer = t;
-                score = p;
+                score = sc;
 
                 continue;
             } 
