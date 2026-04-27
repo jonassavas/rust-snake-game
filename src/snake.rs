@@ -15,7 +15,11 @@ pub struct Snake {
 impl Snake {
     pub fn new(x: i32, y: i32) -> Self {
         Self {
-            body: vec![(x, y)],
+            body: vec![
+                (x, y),
+                (x - 1, y),
+                (x - 2, y),
+            ], 
             direction: Direction::Right,
             grow: false,
         }

@@ -21,18 +21,19 @@ fn random_food(snake: &Snake) -> (i32, i32) {
     }
 }
 
-fn reset_game() -> (Snake, (i32, i32), Direction, f32) {
+fn reset_game() -> (Snake, (i32, i32), Direction, f32, i32) {
     let snake = Snake::new(10, 10);
     let food = random_food(&snake);
     let next_direction = Direction::Right;
     let move_timer = 0.0;
+    let score = 0;
 
-    (snake, food, next_direction, move_timer)
+    (snake, food, next_direction, move_timer, score)
 }
 
 #[macroquad::main("Snake")]
 async fn main() {
-    let (mut snake, mut food, mut next_direction, mut move_timer) = reset_game(); 
+    let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game(); 
 
     let move_delay = 0.08;
 
@@ -66,11 +67,12 @@ async fn main() {
 
                 next_frame().await; // 1 frame pause
 
-                let (s, f, d, t) = reset_game();
+                let (s, f, d, t, p) = reset_game();
                 snake = s;
                 food = f;
                 next_direction = d;
                 move_timer = t;
+                score = p;
 
                 continue;
             } 
@@ -79,6 +81,7 @@ async fn main() {
             if snake.head_position() == food {
                 snake.grow();
                 food = random_food(&snake);
+                score += 1;
             }
         }
 
@@ -110,6 +113,14 @@ async fn main() {
             grid.cell_size - 4.0,
             grid.cell_size - 4.0,
             RED,
+        );
+
+        draw_text(
+            &format!("Score: {}", score),
+            20.0,
+            40.0,
+            30.0,
+            WHITE,
         );
 
         next_frame().await;
