@@ -7,16 +7,23 @@ use snake::{Snake, Direction};
 use grid::{Grid, GRID_WIDTH, GRID_HEIGHT};
 
 // Generate random food position
-fn random_food() -> (i32, i32) {
-    (
-        macroquad::rand::gen_range(0, GRID_WIDTH),
-        macroquad::rand::gen_range(0, GRID_HEIGHT),
-    )
+fn random_food(snake: &Snake) -> (i32, i32) {
+    loop {
+        let pos = (
+            macroquad::rand::gen_range(0, GRID_WIDTH),
+            macroquad::rand::gen_range(0, GRID_HEIGHT),
+        );
+
+        // If position is NOT inside snake, return it
+        if !snake.body.contains(&pos) {
+            return pos;
+        }
+    }
 }
 
 fn reset_game() -> (Snake, (i32, i32), Direction, f32) {
     let snake = Snake::new(10, 10);
-    let food = random_food();
+    let food = random_food(&snake);
     let next_direction = Direction::Right;
     let move_timer = 0.0;
 
@@ -71,7 +78,7 @@ async fn main() {
             // --- Food collision ---
             if snake.head_position() == food {
                 snake.grow();
-                food = random_food();
+                food = random_food(&snake);
             }
         }
 
