@@ -6,6 +6,13 @@ mod grid;
 use snake::{Snake, Direction};
 use grid::{Grid, GRID_WIDTH, GRID_HEIGHT};
 
+#[derive(PartialEq)]
+enum GameState {
+    Menu,
+    Playing,
+    GameOver,
+}
+
 // Generate random food position
 fn random_food(snake: &Snake) -> (i32, i32) {
     loop {
@@ -33,96 +40,136 @@ fn reset_game() -> (Snake, (i32, i32), Direction, f32, i32) {
 
 #[macroquad::main("Snake")]
 async fn main() {
+    let mut state = GameState::Menu;
+
     let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game(); 
 
-    let base_delay = 0.10;
 
     loop {
         clear_background(Color::from_rgba(20, 20, 20, 255));
 
-        // --- Input ---
-        if is_key_pressed(KeyCode::Up) {
-            next_direction = Direction::Up;
-        }
-        if is_key_pressed(KeyCode::Down) {
-            next_direction = Direction::Down;
-        }
-        if is_key_pressed(KeyCode::Left) {
-            next_direction = Direction::Left;
-        }
-        if is_key_pressed(KeyCode::Right) {
-            next_direction = Direction::Right;
-        }
+        match state {
+            GameState::Menu => {
+                draw_text("SNAKE", 300.0, 200.0, 60.0, GREEN);
+                draw_text("Press ENTER to start", 260.0, 300.0, 30.0, WHITE);
 
-        // --- Movement ---
-        move_timer += get_frame_time();
-        let move_delay = (base_delay - score as f32 * 0.0035).max(0.04);
+                if is_key_pressed(KeyCode::Enter) {
+                    let (s, f, d, t, sc) = reset_game();
+                    snake = s;
+                    food = f;
+                    next_direction = d;
+                    move_timer = t;
+                    score = sc;
 
-        while move_timer >= move_delay {
-            move_timer -= move_delay;
+                    state = GameState::Playing;
+                }
+            }
 
-            snake.update_direction(next_direction);
+            GameState::Playing => {
+                // --- Input ---
+                if is_key_pressed(KeyCode::Up) {
+                    next_direction = Direction::Up;
+                }
+                if is_key_pressed(KeyCode::Down) {
+                    next_direction = Direction::Down;
+                }
+                if is_key_pressed(KeyCode::Left) {
+                    next_direction = Direction::Left;
+                }
+                if is_key_pressed(KeyCode::Right) {
+                    next_direction = Direction::Right;
+                }
 
-            if snake.step(GRID_WIDTH, GRID_HEIGHT) {
-                println!("Game Over!");
+                // --- Speed scaling ---
+                let base_delay = 0.12;
+                let move_delay = (base_delay - score as f32 * 0.005).max(0.04);
 
-                next_frame().await; // 1 frame pause
+                move_timer += get_frame_time();
 
-                let (s, f, d, t, sc) = reset_game();
-                snake = s;
-                food = f;
-                next_direction = d;
-                move_timer = t;
-                score = sc;
+                while move_timer >= move_delay {
+                    move_timer -= move_delay;
 
-                continue;
-            } 
+                    snake.update_direction(next_direction);
 
-            // --- Food collision ---
-            if snake.head_position() == food {
-                snake.grow();
-                food = random_food(&snake);
-                score += 1;
+                    if snake.step(GRID_WIDTH, GRID_HEIGHT) {
+                        state = GameState::GameOver;
+                        break;
+                    }
+
+                    if snake.head_position() == food {
+                        snake.grow();
+                        food = random_food(&snake);
+                        score += 1;
+                    }
+                }
+
+                // --- Grid ---
+                let grid = Grid::compute();
+                grid.draw();
+
+                // --- Draw snake ---
+                for (i, (x, y)) in snake.body.iter().enumerate() {
+                    let (px, py) = grid.to_screen(*x as f32, *y as f32);
+                    let color = if i == 0 { GREEN } else { DARKGREEN };
+
+                    draw_rectangle(
+                        px + 2.0,
+                        py + 2.0,
+                        grid.cell_size - 4.0,
+                        grid.cell_size - 4.0,
+                        color,
+                    );
+                }
+
+                // --- Draw food ---
+                let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
+
+                draw_rectangle(
+                    fx + 2.0,
+                    fy + 2.0,
+                    grid.cell_size - 4.0,
+                    grid.cell_size - 4.0,
+                    RED,
+                );
+
+                // --- Score ---
+                draw_text(
+                    &format!("Score: {}", score),
+                    20.0,
+                    40.0,
+                    30.0,
+                    WHITE,
+                );
+            }
+
+            GameState::GameOver => {
+                draw_text("GAME OVER", 260.0, 200.0, 60.0, RED);
+                draw_text(
+                    &format!("Final Score: {}", score),
+                    260.0,
+                    260.0,
+                    30.0,
+                    WHITE,
+                );
+                draw_text("Press R to restart", 260.0, 320.0, 30.0, WHITE);
+                draw_text("Press ESC for menu", 260.0, 360.0, 30.0, WHITE);
+
+                if is_key_pressed(KeyCode::R) {
+                    let (s, f, d, t, sc) = reset_game();
+                    snake = s;
+                    food = f;
+                    next_direction = d;
+                    move_timer = t;
+                    score = sc;
+
+                    state = GameState::Playing;
+                }
+
+                if is_key_pressed(KeyCode::Escape) {
+                    state = GameState::Menu;
+                }
             }
         }
-
-        // --- Grid ---
-        let grid = Grid::compute();
-        grid.draw();
-
-        // --- Draw snake ---
-        for (i, (x, y)) in snake.body.iter().enumerate() {
-            let (px, py) = grid.to_screen(*x as f32, *y as f32);
-
-            let color = if i == 0 { GREEN } else { DARKGREEN };
-
-            draw_rectangle(
-                px + 2.0,
-                py + 2.0,
-                grid.cell_size - 4.0,
-                grid.cell_size - 4.0,
-                color,
-            );
-        }
-
-        // --- Draw food ---
-        let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
-
-        draw_rectangle(
-            fx + 2.0,
-            fy + 2.0,
-            grid.cell_size - 4.0,
-            grid.cell_size - 4.0,
-            RED,
-        );
-
-        draw_text(
-            &format!("Score: {}", score),
-            20.0,
-            40.0,
-            30.0,
-            WHITE,
-        );
 
         next_frame().await;
     }
