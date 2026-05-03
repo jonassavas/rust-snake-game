@@ -44,9 +44,14 @@ async fn main() {
 
     let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game(); 
 
+    let mut prev_body = snake.body.clone(); 
+
+    let head_color = Color::from_rgba(80, 220, 120, 255);
+    let body_color = Color::from_rgba(40, 160, 80, 255);
+
 
     loop {
-        clear_background(Color::from_rgba(20, 20, 20, 255));
+        clear_background(Color::from_rgba(18, 18, 18, 255)); 
 
         match state {
             GameState::Menu => {
@@ -91,6 +96,8 @@ async fn main() {
 
                     snake.update_direction(next_direction);
 
+                    prev_body = snake.body.clone();
+
                     if snake.step(GRID_WIDTH, GRID_HEIGHT) {
                         state = GameState::GameOver;
                         break;
@@ -108,9 +115,20 @@ async fn main() {
                 grid.draw();
 
                 // --- Draw snake ---
-                for (i, (x, y)) in snake.body.iter().enumerate() {
-                    let (px, py) = grid.to_screen(*x as f32, *y as f32);
-                    let color = if i == 0 { GREEN } else { DARKGREEN };
+                let t = (move_timer / move_delay).min(1.0);
+
+                for (i, ((x, y), (px_old, py_old))) in snake
+                    .body
+                    .iter()
+                    .zip(prev_body.iter())
+                    .enumerate()
+                {
+                    let interp_x = *px_old as f32 + (*x - *px_old) as f32 * t;
+                    let interp_y = *py_old as f32 + (*y - *py_old) as f32 * t;
+
+                    let (px, py) = grid.to_screen(interp_x, interp_y);
+
+                    let color = if i == 0 { head_color } else { body_color };
 
                     draw_rectangle(
                         px + 2.0,
@@ -119,7 +137,7 @@ async fn main() {
                         grid.cell_size - 4.0,
                         color,
                     );
-                }
+                } 
 
                 // --- Draw food ---
                 let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
