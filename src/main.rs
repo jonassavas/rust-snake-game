@@ -142,13 +142,15 @@ async fn main() {
                 // --- Draw food ---
                 let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
 
+                let pulse = (get_time().sin() * 2.0) as f32;
+
                 draw_rectangle(
-                    fx + 2.0,
-                    fy + 2.0,
-                    grid.cell_size - 4.0,
-                    grid.cell_size - 4.0,
+                    fx + 2.0 - pulse,
+                    fy + 2.0 - pulse,
+                    grid.cell_size - 4.0 + pulse * 2.0,
+                    grid.cell_size - 4.0 + pulse * 2.0,
                     RED,
-                );
+                ); 
 
                 // --- Score ---
                 draw_text(

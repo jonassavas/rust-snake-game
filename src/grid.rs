@@ -39,7 +39,7 @@ impl Grid {
                 let px = self.offset_x + x as f32 * self.cell_size;
                 let py = self.offset_y + y as f32 * self.cell_size;
 
-                draw_rectangle_lines(px, py, self.cell_size, self.cell_size, 2.0, DARKGRAY);
+                draw_rectangle_lines(px, py, self.cell_size, self.cell_size, 1.0, Color::from_rgba(60, 60, 60, 255));  
             }
         }
 
