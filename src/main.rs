@@ -21,7 +21,6 @@ fn random_food(snake: &Snake) -> (i32, i32) {
             macroquad::rand::gen_range(0, GRID_HEIGHT),
         );
 
-        // If position is NOT inside snake, return it
         if !snake.body.contains(&pos) {
             return pos;
         }
@@ -42,16 +41,14 @@ fn reset_game() -> (Snake, (i32, i32), Direction, f32, i32) {
 async fn main() {
     let mut state = GameState::Menu;
 
-    let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game(); 
-
-    let mut prev_body = snake.body.clone(); 
+    let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game();
+    let mut prev_body = snake.body.clone();
 
     let head_color = Color::from_rgba(80, 220, 120, 255);
     let body_color = Color::from_rgba(40, 160, 80, 255);
 
-
     loop {
-        clear_background(Color::from_rgba(18, 18, 18, 255)); 
+        clear_background(Color::from_rgba(18, 18, 18, 255));
 
         match state {
             GameState::Menu => {
@@ -65,6 +62,7 @@ async fn main() {
                     next_direction = d;
                     move_timer = t;
                     score = sc;
+                    prev_body = snake.body.clone(); // reset interpolation
 
                     state = GameState::Playing;
                 }
@@ -96,6 +94,7 @@ async fn main() {
 
                     snake.update_direction(next_direction);
 
+                    // Save previous positions BEFORE movement
                     prev_body = snake.body.clone();
 
                     if snake.step(GRID_WIDTH, GRID_HEIGHT) {
@@ -114,21 +113,37 @@ async fn main() {
                 let grid = Grid::compute();
                 grid.draw();
 
-                // --- Draw snake ---
+                // --- Fix for growing snake (IMPORTANT) ---
+                while prev_body.len() < snake.body.len() {
+                    prev_body.push(*prev_body.last().unwrap());
+                }
+
+                // --- Interpolation ---
                 let t = (move_timer / move_delay).min(1.0);
 
+                // --- Draw snake ---
                 for (i, ((x, y), (px_old, py_old))) in snake
                     .body
                     .iter()
                     .zip(prev_body.iter())
                     .enumerate()
                 {
-                    let interp_x = *px_old as f32 + (*x - *px_old) as f32 * t;
-                    let interp_y = *py_old as f32 + (*y - *py_old) as f32 * t;
+                    let dx = (*x - *px_old).abs();
+                    let dy = (*y - *py_old).abs();
+
+                    // If large jump → teleport (wrap or reset)
+                    let (interp_x, interp_y) = if dx > GRID_WIDTH / 2 || dy > GRID_HEIGHT / 2 {
+                        (*x as f32, *y as f32)
+                    } else {
+                        (
+                            *px_old as f32 + (*x - *px_old) as f32 * t,
+                            *py_old as f32 + (*y - *py_old) as f32 * t,
+                        )
+                    }; 
 
                     let (px, py) = grid.to_screen(interp_x, interp_y);
 
-                    let color = if i == 0 { head_color } else { body_color };
+                    let color = if i == 0 { head_color } else { body_color }; 
 
                     draw_rectangle(
                         px + 2.0,
@@ -137,12 +152,12 @@ async fn main() {
                         grid.cell_size - 4.0,
                         color,
                     );
-                } 
+                }
 
                 // --- Draw food ---
                 let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
 
-                let pulse = (get_time().sin() * 2.0) as f32;
+                let pulse = (get_time().sin() * 1.5 + 1.5) as f32;
 
                 draw_rectangle(
                     fx + 2.0 - pulse,
@@ -150,7 +165,7 @@ async fn main() {
                     grid.cell_size - 4.0 + pulse * 2.0,
                     grid.cell_size - 4.0 + pulse * 2.0,
                     RED,
-                ); 
+                );
 
                 // --- Score ---
                 draw_text(
@@ -181,6 +196,7 @@ async fn main() {
                     next_direction = d;
                     move_timer = t;
                     score = sc;
+                    prev_body = snake.body.clone(); // important
 
                     state = GameState::Playing;
                 }
