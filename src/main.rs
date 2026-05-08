@@ -114,12 +114,39 @@ async fn main() {
                         let grid = Grid::compute();
                         let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
 
-                        for _ in 0..20 {
-                            particles.push(Particle::new(
-                                fx + grid.cell_size / 2.0,
-                                fy + grid.cell_size / 2.0,
-                            ));
-                        }
+                        let center_x = fx + grid.cell_size / 2.0;
+                        let center_y = fy + grid.cell_size / 2.0;
+
+                        let speed = 110.0;
+                        let offset = 4.0;
+
+                        particles.push(Particle::new(
+                            center_x - offset,
+                            center_y - offset,
+                            -speed,
+                            -speed,
+                        ));
+
+                        particles.push(Particle::new(
+                            center_x + offset,
+                            center_y - offset,
+                            speed,
+                            -speed,
+                        ));
+
+                        particles.push(Particle::new(
+                            center_x - offset,
+                            center_y + offset,
+                            -speed,
+                            speed,
+                        ));
+
+                        particles.push(Particle::new(
+                            center_x + offset,
+                            center_y + offset,
+                            speed,
+                            speed,
+                        ));                       
 
                         food = random_food(&snake);
                     } 

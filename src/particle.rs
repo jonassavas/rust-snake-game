@@ -9,14 +9,14 @@ pub struct Particle {
 }
 
 impl Particle {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn new(x: f32, y: f32, vx: f32, vy: f32) -> Self {
         Self {
             x,
             y,
-            vx: rand::gen_range(-80.0, 80.0),
-            vy: rand::gen_range(-80.0, 80.0),
-            life: 1.0,
-        }
+            vx,
+            vy,
+            life: 0.5,
+        } 
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -24,10 +24,10 @@ impl Particle {
         self.y += self.vy * dt;
 
         // Slow down slightly
-        self.vx *= 0.98;
-        self.vy *= 0.98;
+        self.vx *= 0.92;
+        self.vy *= 0.92;
 
-        self.life -= dt * 2.0;
+        self.life -= dt * 1.6;
     }
 
     pub fn draw(&self) {
@@ -38,7 +38,7 @@ impl Particle {
             self.life.max(0.0),
         );
 
-        draw_circle(self.x, self.y, 3.0, color);
+        draw_circle(self.x, self.y, 3.5, color); 
     }
 
     pub fn is_dead(&self) -> bool {
