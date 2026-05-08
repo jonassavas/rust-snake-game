@@ -2,9 +2,11 @@ use macroquad::prelude::*;
 
 mod snake;
 mod grid;
+mod particle;
 
 use snake::{Snake, Direction};
 use grid::{Grid, GRID_WIDTH, GRID_HEIGHT};
+use particle::Particle;
 
 #[derive(PartialEq)]
 enum GameState {
@@ -46,6 +48,8 @@ async fn main() {
 
     let head_color = Color::from_rgba(80, 220, 120, 255);
     let body_color = Color::from_rgba(40, 160, 80, 255);
+
+    let mut particles: Vec<Particle> = Vec::new();
 
     loop {
         clear_background(Color::from_rgba(18, 18, 18, 255));
@@ -104,10 +108,31 @@ async fn main() {
 
                     if snake.head_position() == food {
                         snake.grow();
-                        food = random_food(&snake);
                         score += 1;
-                    }
+
+                        // Particle burst
+                        let grid = Grid::compute();
+                        let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
+
+                        for _ in 0..20 {
+                            particles.push(Particle::new(
+                                fx + grid.cell_size / 2.0,
+                                fy + grid.cell_size / 2.0,
+                            ));
+                        }
+
+                        food = random_food(&snake);
+                    } 
                 }
+
+                let dt = get_frame_time();
+
+                for particle in particles.iter_mut() {
+                    particle.update(dt);
+                }
+
+                // Remove dead particles
+                particles.retain(|p| !p.is_dead());
 
                 // --- Grid ---
                 let grid = Grid::compute();
@@ -156,6 +181,10 @@ async fn main() {
 
                 // --- Draw food ---
                 let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
+
+                for particle in &particles {
+                    particle.draw();
+                }
 
                 let pulse = (get_time().sin() * 1.5 + 1.5) as f32;
 
