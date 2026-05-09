@@ -39,11 +39,27 @@ fn reset_game() -> (Snake, (i32, i32), Direction, f32, i32) {
     (snake, food, next_direction, move_timer, score)
 }
 
-#[macroquad::main("Snake")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Snake".to_owned(),
+        window_width: 900,
+        window_height: 900,
+        high_dpi: true,
+        fullscreen: false,
+        sample_count: 1,
+        window_resizable: true,
+
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
     let mut state = GameState::Menu;
 
-    let (mut snake, mut food, mut next_direction, mut move_timer, mut score) = reset_game();
+    let (mut snake, mut food, mut next_direction, mut move_timer, mut score) =
+        reset_game();
+
     let mut prev_body = snake.body.clone();
 
     let head_color = Color::from_rgba(80, 220, 120, 255);
@@ -57,16 +73,25 @@ async fn main() {
         match state {
             GameState::Menu => {
                 draw_text("SNAKE", 300.0, 200.0, 60.0, GREEN);
-                draw_text("Press ENTER to start", 260.0, 300.0, 30.0, WHITE);
+
+                draw_text(
+                    "Press ENTER to start",
+                    260.0,
+                    300.0,
+                    30.0,
+                    WHITE,
+                );
 
                 if is_key_pressed(KeyCode::Enter) {
                     let (s, f, d, t, sc) = reset_game();
+
                     snake = s;
                     food = f;
                     next_direction = d;
                     move_timer = t;
                     score = sc;
-                    prev_body = snake.body.clone(); // reset interpolation
+
+                    prev_body = snake.body.clone();
 
                     state = GameState::Playing;
                 }
@@ -77,19 +102,23 @@ async fn main() {
                 if is_key_pressed(KeyCode::Up) {
                     next_direction = Direction::Up;
                 }
+
                 if is_key_pressed(KeyCode::Down) {
                     next_direction = Direction::Down;
                 }
+
                 if is_key_pressed(KeyCode::Left) {
                     next_direction = Direction::Left;
                 }
+
                 if is_key_pressed(KeyCode::Right) {
                     next_direction = Direction::Right;
                 }
 
                 // --- Speed scaling ---
                 let base_delay = 0.12;
-                let move_delay = (base_delay - score as f32 * 0.005).max(0.04);
+                let move_delay =
+                    (base_delay - score as f32 * 0.005).max(0.04);
 
                 move_timer += get_frame_time();
 
@@ -106,13 +135,16 @@ async fn main() {
                         break;
                     }
 
+                    // --- Food collision ---
                     if snake.head_position() == food {
                         snake.grow();
                         score += 1;
 
                         // Particle burst
                         let grid = Grid::compute();
-                        let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
+
+                        let (fx, fy) =
+                            grid.to_screen(food.0 as f32, food.1 as f32);
 
                         let center_x = fx + grid.cell_size / 2.0;
                         let center_y = fy + grid.cell_size / 2.0;
@@ -146,26 +178,26 @@ async fn main() {
                             center_y + offset,
                             speed,
                             speed,
-                        ));                       
+                        ));
 
                         food = random_food(&snake);
-                    } 
+                    }
                 }
 
+                // --- Update particles ---
                 let dt = get_frame_time();
 
                 for particle in particles.iter_mut() {
                     particle.update(dt);
                 }
 
-                // Remove dead particles
                 particles.retain(|p| !p.is_dead());
 
                 // --- Grid ---
                 let grid = Grid::compute();
                 grid.draw();
 
-                // --- Fix for growing snake (IMPORTANT) ---
+                // --- Fix growing interpolation ---
                 while prev_body.len() < snake.body.len() {
                     prev_body.push(*prev_body.last().unwrap());
                 }
@@ -183,19 +215,26 @@ async fn main() {
                     let dx = (*x - *px_old).abs();
                     let dy = (*y - *py_old).abs();
 
-                    // If large jump → teleport (wrap or reset)
-                    let (interp_x, interp_y) = if dx > GRID_WIDTH / 2 || dy > GRID_HEIGHT / 2 {
-                        (*x as f32, *y as f32)
-                    } else {
-                        (
-                            *px_old as f32 + (*x - *px_old) as f32 * t,
-                            *py_old as f32 + (*y - *py_old) as f32 * t,
-                        )
-                    }; 
+                    // Prevent interpolation across wrap-around
+                    let (interp_x, interp_y) =
+                        if dx > GRID_WIDTH / 2
+                            || dy > GRID_HEIGHT / 2
+                        {
+                            (*x as f32, *y as f32)
+                        } else {
+                            (
+                                *px_old as f32
+                                    + (*x - *px_old) as f32 * t,
+                                *py_old as f32
+                                    + (*y - *py_old) as f32 * t,
+                            )
+                        };
 
-                    let (px, py) = grid.to_screen(interp_x, interp_y);
+                    let (px, py) =
+                        grid.to_screen(interp_x, interp_y);
 
-                    let color = if i == 0 { head_color } else { body_color }; 
+                    let color =
+                        if i == 0 { head_color } else { body_color };
 
                     draw_rectangle(
                         px + 2.0,
@@ -207,13 +246,15 @@ async fn main() {
                 }
 
                 // --- Draw food ---
-                let (fx, fy) = grid.to_screen(food.0 as f32, food.1 as f32);
+                let (fx, fy) =
+                    grid.to_screen(food.0 as f32, food.1 as f32);
 
                 for particle in &particles {
                     particle.draw();
                 }
 
-                let pulse = (get_time().sin() * 1.5 + 1.5) as f32;
+                let pulse =
+                    (get_time().sin() * 1.5 + 1.5) as f32;
 
                 draw_rectangle(
                     fx + 2.0 - pulse,
@@ -231,10 +272,25 @@ async fn main() {
                     30.0,
                     WHITE,
                 );
+
+                // --- FPS Counter ---
+                let fps_text = format!("FPS: {}", get_fps());
+
+                let text_dimensions =
+                    measure_text(&fps_text, None, 24, 1.0);
+
+                draw_text(
+                    &fps_text,
+                    screen_width() - text_dimensions.width - 20.0,
+                    30.0,
+                    24.0,
+                    GRAY,
+                );
             }
 
             GameState::GameOver => {
                 draw_text("GAME OVER", 260.0, 200.0, 60.0, RED);
+
                 draw_text(
                     &format!("Final Score: {}", score),
                     260.0,
@@ -242,17 +298,33 @@ async fn main() {
                     30.0,
                     WHITE,
                 );
-                draw_text("Press R to restart", 260.0, 320.0, 30.0, WHITE);
-                draw_text("Press ESC for menu", 260.0, 360.0, 30.0, WHITE);
+
+                draw_text(
+                    "Press R to restart",
+                    260.0,
+                    320.0,
+                    30.0,
+                    WHITE,
+                );
+
+                draw_text(
+                    "Press ESC for menu",
+                    260.0,
+                    360.0,
+                    30.0,
+                    WHITE,
+                );
 
                 if is_key_pressed(KeyCode::R) {
                     let (s, f, d, t, sc) = reset_game();
+
                     snake = s;
                     food = f;
                     next_direction = d;
                     move_timer = t;
                     score = sc;
-                    prev_body = snake.body.clone(); // important
+
+                    prev_body = snake.body.clone();
 
                     state = GameState::Playing;
                 }
