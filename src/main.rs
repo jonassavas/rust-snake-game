@@ -117,8 +117,8 @@ async fn main() {
                         let center_x = fx + grid.cell_size / 2.0;
                         let center_y = fy + grid.cell_size / 2.0;
 
-                        let speed = 110.0;
-                        let offset = 4.0;
+                        let speed = 180.0;
+                        let offset = 10.0;
 
                         particles.push(Particle::new(
                             center_x - offset,

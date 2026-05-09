@@ -15,7 +15,7 @@ impl Particle {
             y,
             vx,
             vy,
-            life: 0.5,
+            life: 0.8,
         } 
     }
 
@@ -24,10 +24,10 @@ impl Particle {
         self.y += self.vy * dt;
 
         // Slow down slightly
-        self.vx *= 0.92;
-        self.vy *= 0.92;
+        self.vx *= 0.97;
+        self.vy *= 0.97;
 
-        self.life -= dt * 1.6;
+        self.life -= dt * 1.1;
     }
 
     pub fn draw(&self) {
@@ -38,7 +38,7 @@ impl Particle {
             self.life.max(0.0),
         );
 
-        draw_circle(self.x, self.y, 3.5, color); 
+        draw_circle(self.x, self.y, 4.5, color); 
     }
 
     pub fn is_dead(&self) -> bool {
