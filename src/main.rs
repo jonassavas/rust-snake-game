@@ -266,27 +266,10 @@ async fn main() {
                 );
 
                 // --- Score ---
-                draw_text(
-                    &format!("Score: {}", score),
-                    20.0,
-                    40.0,
-                    30.0,
-                    WHITE,
-                );
+                ui::draw_score(score); 
 
                 // --- FPS Counter ---
-                let fps_text = format!("FPS: {}", get_fps());
-
-                let text_dimensions =
-                    measure_text(&fps_text, None, 24, 1.0);
-
-                draw_text(
-                    &fps_text,
-                    screen_width() - text_dimensions.width - 20.0,
-                    30.0,
-                    24.0,
-                    GRAY,
-                );
+                ui::draw_fps(); 
             }
 
             GameState::GameOver => {
