@@ -3,6 +3,7 @@ use macroquad::prelude::*;
 mod snake;
 mod grid;
 mod particle;
+mod ui;
 
 use snake::{Snake, Direction};
 use grid::{Grid, GRID_WIDTH, GRID_HEIGHT};
@@ -72,7 +73,7 @@ async fn main() {
 
         match state {
             GameState::Menu => {
-                draw_text("SNAKE", 300.0, 200.0, 60.0, GREEN);
+                ui::draw_menu(); 
 
                 draw_text(
                     "Press ENTER to start",
@@ -289,31 +290,7 @@ async fn main() {
             }
 
             GameState::GameOver => {
-                draw_text("GAME OVER", 260.0, 200.0, 60.0, RED);
-
-                draw_text(
-                    &format!("Final Score: {}", score),
-                    260.0,
-                    260.0,
-                    30.0,
-                    WHITE,
-                );
-
-                draw_text(
-                    "Press R to restart",
-                    260.0,
-                    320.0,
-                    30.0,
-                    WHITE,
-                );
-
-                draw_text(
-                    "Press ESC for menu",
-                    260.0,
-                    360.0,
-                    30.0,
-                    WHITE,
-                );
+                ui::draw_game_over(score);  
 
                 if is_key_pressed(KeyCode::R) {
                     let (s, f, d, t, sc) = reset_game();
