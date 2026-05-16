@@ -9,6 +9,7 @@ use crate::ui;
 pub enum GameState {
     Menu,
     Playing,
+    Paused,
     GameOver,
 }
 
@@ -98,6 +99,10 @@ impl Game {
             }
 
             GameState::Playing => {
+                if is_key_pressed(KeyCode::Escape){
+                    self.state = GameState::Paused;
+                    return;
+                }
                 self.handle_input();
                 self.update_game();
             }
@@ -109,6 +114,16 @@ impl Game {
                 }
 
                 if is_key_pressed(KeyCode::Escape) {
+                    self.state = GameState::Menu;
+                }
+            }
+
+            GameState::Paused => {
+                if is_key_pressed(KeyCode::Escape) {
+                    self.state = GameState::Playing;
+                }
+
+                if is_key_pressed(KeyCode::M) {
                     self.state = GameState::Menu;
                 }
             }
@@ -226,6 +241,20 @@ impl Game {
 
             GameState::GameOver => {
                 ui::draw_game_over(self.score);
+            }
+
+            GameState::Paused => {
+                self.draw_game();
+
+                draw_rectangle(
+                    0.0,
+                    0.0,
+                    screen_width(),
+                    screen_height(),
+                    Color::new(0.0, 0.0, 0.0, 0.5),
+                );
+
+                ui::draw_pause_menu();
             }
         }
     }

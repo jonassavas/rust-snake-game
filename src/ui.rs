@@ -64,3 +64,24 @@ pub fn draw_fps() {
         GRAY,
     );
 }
+
+
+pub fn draw_pause_menu() {
+    draw_text("PAUSED", 280.0, 200.0, 60.0, YELLOW);
+
+    draw_text(
+        "Press ESC to resume",
+        240.0,
+        300.0,
+        30.0,
+        WHITE,
+    );
+
+    draw_text(
+        "Press M for menu",
+        260.0,
+        350.0,
+        30.0,
+        WHITE,
+    );
+}
