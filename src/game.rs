@@ -306,13 +306,57 @@ impl Game {
             let color =
                 if i == 0 { self.head_color } else { self.body_color };
 
+            let rect_x = px + 2.0;
+            let rect_y = py + 2.0;
+            let rect_size = grid.cell_size - 4.0;
+
             draw_rectangle(
-                px + 2.0,
-                py + 2.0,
-                grid.cell_size - 4.0,
-                grid.cell_size - 4.0,
+                rect_x,
+                rect_y,
+                rect_size,
+                rect_size,
                 color,
             );
+
+            // --- Snake eyes (head only) ---
+            if i == 0 {
+                let eye_radius = rect_size * 0.08;
+
+                let (eye1_x, eye1_y, eye2_x, eye2_y) =
+                    match self.snake.direction {
+                        Direction::Up => (
+                            rect_x + rect_size * 0.30,
+                            rect_y + rect_size * 0.25,
+                            rect_x + rect_size * 0.70,
+                            rect_y + rect_size * 0.25,
+                        ),
+
+                        Direction::Down => (
+                            rect_x + rect_size * 0.30,
+                            rect_y + rect_size * 0.75,
+                            rect_x + rect_size * 0.70,
+                            rect_y + rect_size * 0.75,
+                        ),
+
+                        Direction::Left => (
+                            rect_x + rect_size * 0.25,
+                            rect_y + rect_size * 0.30,
+                            rect_x + rect_size * 0.25,
+                            rect_y + rect_size * 0.70,
+                        ),
+
+                        Direction::Right => (
+                            rect_x + rect_size * 0.75,
+                            rect_y + rect_size * 0.30,
+                            rect_x + rect_size * 0.75,
+                            rect_y + rect_size * 0.70,
+                        ),
+                    };
+
+                draw_circle(eye1_x, eye1_y, eye_radius, BLACK);
+
+                draw_circle(eye2_x, eye2_y, eye_radius, BLACK);
+            }
         }
 
         let (fx, fy) =
