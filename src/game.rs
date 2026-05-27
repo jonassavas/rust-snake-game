@@ -33,6 +33,65 @@ pub struct Game {
     pub body_color: Color,
 }
 
+fn draw_rounded_rect(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    radius: f32,
+    color: Color,
+) {
+    // Center
+    draw_rectangle(
+        x + radius,
+        y,
+        w - radius * 2.0,
+        h,
+        color,
+    );
+
+    // Sides
+    draw_rectangle(
+        x,
+        y + radius,
+        radius,
+        h - radius * 2.0,
+        color,
+    );
+
+    draw_rectangle(
+        x + w - radius,
+        y + radius,
+        radius,
+        h - radius * 2.0,
+        color,
+    );
+
+    // Corners
+    draw_circle(x + radius, y + radius, radius, color);
+
+    draw_circle(
+        x + w - radius,
+        y + radius,
+        radius,
+        color,
+    );
+
+    draw_circle(
+        x + radius,
+        y + h - radius,
+        radius,
+        color,
+    );
+
+    draw_circle(
+        x + w - radius,
+        y + h - radius,
+        radius,
+        color,
+    );
+}
+
 impl Game {
     pub fn new() -> Self {
         let snake = Snake::new(10, 10);
@@ -259,6 +318,65 @@ impl Game {
         }
     }
 
+    pub fn draw_rounded_rect(
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        radius: f32,
+        color: Color,
+    ) {
+        // Center
+        draw_rectangle(
+            x + radius,
+            y,
+            w - radius * 2.0,
+            h,
+            color,
+        );
+
+        // Sides
+        draw_rectangle(
+            x,
+            y + radius,
+            radius,
+            h - radius * 2.0,
+            color,
+        );
+
+        draw_rectangle(
+            x + w - radius,
+            y + radius,
+            radius,
+            h - radius * 2.0,
+            color,
+        );
+
+        // Corners
+        draw_circle(x + radius, y + radius, radius, color);
+
+        draw_circle(
+            x + w - radius,
+            y + radius,
+            radius,
+            color,
+        );
+
+        draw_circle(
+            x + radius,
+            y + h - radius,
+            radius,
+            color,
+        );
+
+        draw_circle(
+            x + w - radius,
+            y + h - radius,
+            radius,
+            color,
+        );
+    }
+
     fn draw_game(&mut self) {
         let grid = Grid::compute();
 
@@ -306,11 +424,31 @@ impl Game {
             let color =
                 if i == 0 { self.head_color } else { self.body_color };
 
-            draw_rectangle(
-                px + 2.0,
-                py + 2.0,
-                grid.cell_size - 4.0,
-                grid.cell_size - 4.0,
+            let rect_x = px + 2.0;
+            let rect_y = py + 2.0;
+
+            // Tail taper
+            let mut size = grid.cell_size - 4.0;
+
+            if i > 0 {
+                let t =
+                    i as f32 / self.snake.body.len() as f32;
+
+                size *= 1.0 - t * 0.35;
+            }
+
+            let offset =
+                (grid.cell_size - 4.0 - size) / 2.0;
+
+            let draw_x = rect_x + offset;
+            let draw_y = rect_y + offset;
+
+            draw_rounded_rect(
+                draw_x,
+                draw_y,
+                size,
+                size,
+                size * 0.22,
                 color,
             );
         }
@@ -337,4 +475,5 @@ impl Game {
 
         ui::draw_fps();
     }
+
 }
