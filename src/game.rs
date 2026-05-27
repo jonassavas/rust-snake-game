@@ -318,65 +318,6 @@ impl Game {
         }
     }
 
-    pub fn draw_rounded_rect(
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        radius: f32,
-        color: Color,
-    ) {
-        // Center
-        draw_rectangle(
-            x + radius,
-            y,
-            w - radius * 2.0,
-            h,
-            color,
-        );
-
-        // Sides
-        draw_rectangle(
-            x,
-            y + radius,
-            radius,
-            h - radius * 2.0,
-            color,
-        );
-
-        draw_rectangle(
-            x + w - radius,
-            y + radius,
-            radius,
-            h - radius * 2.0,
-            color,
-        );
-
-        // Corners
-        draw_circle(x + radius, y + radius, radius, color);
-
-        draw_circle(
-            x + w - radius,
-            y + radius,
-            radius,
-            color,
-        );
-
-        draw_circle(
-            x + radius,
-            y + h - radius,
-            radius,
-            color,
-        );
-
-        draw_circle(
-            x + w - radius,
-            y + h - radius,
-            radius,
-            color,
-        );
-    }
-
     fn draw_game(&mut self) {
         let grid = Grid::compute();
 
