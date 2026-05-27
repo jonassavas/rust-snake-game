@@ -451,6 +451,99 @@ impl Game {
                 size * 0.22,
                 color,
             );
+
+            if i == 0 {
+    let eye_radius = size * 0.08;
+
+    let (eye1_x, eye1_y, eye2_x, eye2_y) =
+        match self.snake.direction {
+            Direction::Up => (
+                draw_x + size * 0.30,
+                draw_y + size * 0.25,
+
+                draw_x + size * 0.70,
+                draw_y + size * 0.25,
+            ),
+
+            Direction::Down => (
+                draw_x + size * 0.30,
+                draw_y + size * 0.75,
+
+                draw_x + size * 0.70,
+                draw_y + size * 0.75,
+            ),
+
+            Direction::Left => (
+                draw_x + size * 0.25,
+                draw_y + size * 0.30,
+
+                draw_x + size * 0.25,
+                draw_y + size * 0.70,
+            ),
+
+            Direction::Right => (
+                draw_x + size * 0.75,
+                draw_y + size * 0.30,
+
+                draw_x + size * 0.75,
+                draw_y + size * 0.70,
+            ),
+        };
+
+        // Occasional blink
+        let blink =
+            (get_time() * 2.5).sin() > 0.97;
+
+        if blink {
+            draw_line(
+                eye1_x - eye_radius,
+                eye1_y,
+                eye1_x + eye_radius,
+                eye1_y,
+                2.0,
+                BLACK,
+            );
+
+            draw_line(
+                eye2_x - eye_radius,
+                eye2_y,
+                eye2_x + eye_radius,
+                eye2_y,
+                2.0,
+                BLACK,
+            );
+        } else {
+            // White eyeballs
+            draw_circle(
+                eye1_x,
+                eye1_y,
+                eye_radius * 1.6,
+                WHITE,
+            );
+
+            draw_circle(
+                eye2_x,
+                eye2_y,
+                eye_radius * 1.6,
+                WHITE,
+            );
+
+            // Pupils
+            draw_circle(
+                eye1_x,
+                eye1_y,
+                eye_radius,
+                BLACK,
+            );
+
+            draw_circle(
+                eye2_x,
+                eye2_y,
+                eye_radius,
+                BLACK,
+            );
+        }
+    }
         }
 
         let (fx, fy) =
