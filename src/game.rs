@@ -31,6 +31,9 @@ pub struct Game {
 
     pub head_color: Color,
     pub body_color: Color,
+
+    pub tongue_timer: f32,
+    pub tongue_active: bool,
 }
 
 fn draw_rounded_rect(
@@ -116,6 +119,9 @@ impl Game {
             body_color: Color::from_rgba(40, 160, 80, 255),
 
             snake,
+
+            tongue_timer: 0.0,
+            tongue_active: false,
         }
     }
 
@@ -146,6 +152,9 @@ impl Game {
         self.prev_body = self.snake.body.clone();
 
         self.particles.clear();
+
+        self.tongue_timer = 0.0;
+        self.tongue_active = false;
     }
 
     pub fn update(&mut self) {
@@ -245,6 +254,22 @@ impl Game {
         }
 
         self.particles.retain(|p| !p.is_dead());
+
+        self.tongue_timer += get_frame_time();
+
+        if self.tongue_timer > 1.5 {
+            self.tongue_timer = 0.0;
+            self.tongue_active = true;
+        }
+
+        if self.tongue_active {
+            self.tongue_timer += get_frame_time();
+
+            if self.tongue_timer > 0.15 {
+                self.tongue_active = false;
+                self.tongue_timer = 0.0;
+            }
+        }
     }
 
     fn spawn_food_particles(&mut self) {
@@ -320,21 +345,25 @@ impl Game {
 
     fn draw_game(&mut self) {
         let grid = Grid::compute();
-
         grid.draw();
 
         while self.prev_body.len() < self.snake.body.len() {
-            self.prev_body
-                .push(*self.prev_body.last().unwrap());
+            self.prev_body.push(*self.prev_body.last().unwrap());
         }
 
         let base_delay = 0.12;
-
-        let move_delay =
-            (base_delay - self.score as f32 * 0.005).max(0.04);
+        let move_delay = (base_delay - self.score as f32 * 0.005).max(0.04);
 
         let t = (self.move_timer / move_delay).min(1.0);
 
+        let (dx_dir, dy_dir) = match self.snake.direction {
+            Direction::Up => (0.0, -1.0),
+            Direction::Down => (0.0, 1.0),
+            Direction::Left => (-1.0, 0.0),
+            Direction::Right => (1.0, 0.0),
+        };
+
+        // --- DRAW SNAKE ---
         for (i, ((x, y), (px_old, py_old))) in self
             .snake
             .body
@@ -345,41 +374,35 @@ impl Game {
             let dx = (*x - *px_old).abs();
             let dy = (*y - *py_old).abs();
 
-            let (interp_x, interp_y) =
-                if dx > GRID_WIDTH / 2
-                    || dy > GRID_HEIGHT / 2
-                {
-                    (*x as f32, *y as f32)
-                } else {
-                    (
-                        *px_old as f32
-                            + (*x - *px_old) as f32 * t,
-                        *py_old as f32
-                            + (*y - *py_old) as f32 * t,
-                    )
-                };
+            let (interp_x, interp_y) = if dx > GRID_WIDTH / 2 || dy > GRID_HEIGHT / 2 {
+                (*x as f32, *y as f32)
+            } else {
+                (
+                    *px_old as f32 + (*x - *px_old) as f32 * t,
+                    *py_old as f32 + (*y - *py_old) as f32 * t,
+                )
+            };
 
-            let (px, py) =
-                grid.to_screen(interp_x, interp_y);
+            let (px, py) = grid.to_screen(interp_x, interp_y);
 
-            let color =
-                if i == 0 { self.head_color } else { self.body_color };
+            let color = if i == 0 {
+                self.head_color
+            } else {
+                self.body_color
+            };
 
             let rect_x = px + 2.0;
             let rect_y = py + 2.0;
 
-            // Tail taper
+            // --- TAPER ---
             let mut size = grid.cell_size - 4.0;
 
             if i > 0 {
-                let t =
-                    i as f32 / self.snake.body.len() as f32;
-
-                size *= 1.0 - t * 0.35;
+                let tt = i as f32 / self.snake.body.len() as f32;
+                size *= 1.0 - tt * 0.35;
             }
 
-            let offset =
-                (grid.cell_size - 4.0 - size) / 2.0;
+            let offset = (grid.cell_size - 4.0 - size) / 2.0;
 
             let draw_x = rect_x + offset;
             let draw_y = rect_y + offset;
@@ -393,100 +416,95 @@ impl Game {
                 color,
             );
 
+            // =========================
+            // TONGUE (HEAD ONLY)
+            // =========================
+            if i == 0 && self.tongue_active {
+                let tongue_len = grid.cell_size * 0.6;
+
+                let start_x = px + grid.cell_size / 2.0;
+                let start_y = py + grid.cell_size / 2.0;
+
+                let end_x = start_x + dx_dir * tongue_len;
+                let end_y = start_y + dy_dir * tongue_len;
+
+                draw_line(
+                    start_x,
+                    start_y,
+                    end_x,
+                    end_y,
+                    2.0,
+                    Color::new(1.0, 0.3, 0.3, 1.0),
+                );
+
+                draw_line(
+                    end_x,
+                    end_y,
+                    end_x + dy_dir * 3.0,
+                    end_y - dx_dir * 3.0,
+                    1.5,
+                    RED,
+                );
+
+                draw_line(
+                    end_x,
+                    end_y,
+                    end_x - dy_dir * 3.0,
+                    end_y + dx_dir * 3.0,
+                    1.5,
+                    RED,
+                );
+            }
+
+            // =========================
+            // EYES (HEAD ONLY)
+            // =========================
             if i == 0 {
-    let eye_radius = size * 0.08;
+                let eye_radius = size * 0.08;
 
-    let (eye1_x, eye1_y, eye2_x, eye2_y) =
-        match self.snake.direction {
-            Direction::Up => (
-                draw_x + size * 0.30,
-                draw_y + size * 0.25,
+                let (eye1_x, eye1_y, eye2_x, eye2_y) = match self.snake.direction {
+                    Direction::Up => (
+                        draw_x + size * 0.30,
+                        draw_y + size * 0.25,
+                        draw_x + size * 0.70,
+                        draw_y + size * 0.25,
+                    ),
+                    Direction::Down => (
+                        draw_x + size * 0.30,
+                        draw_y + size * 0.75,
+                        draw_x + size * 0.70,
+                        draw_y + size * 0.75,
+                    ),
+                    Direction::Left => (
+                        draw_x + size * 0.25,
+                        draw_y + size * 0.30,
+                        draw_x + size * 0.25,
+                        draw_y + size * 0.70,
+                    ),
+                    Direction::Right => (
+                        draw_x + size * 0.75,
+                        draw_y + size * 0.30,
+                        draw_x + size * 0.75,
+                        draw_y + size * 0.70,
+                    ),
+                };
 
-                draw_x + size * 0.70,
-                draw_y + size * 0.25,
-            ),
+                let blink = (get_time() * 2.5).sin() > 0.97;
 
-            Direction::Down => (
-                draw_x + size * 0.30,
-                draw_y + size * 0.75,
+                if blink {
+                    draw_line(eye1_x - eye_radius, eye1_y, eye1_x + eye_radius, eye1_y, 2.0, BLACK);
+                    draw_line(eye2_x - eye_radius, eye2_y, eye2_x + eye_radius, eye2_y, 2.0, BLACK);
+                } else {
+                    draw_circle(eye1_x, eye1_y, eye_radius * 1.6, WHITE);
+                    draw_circle(eye2_x, eye2_y, eye_radius * 1.6, WHITE);
 
-                draw_x + size * 0.70,
-                draw_y + size * 0.75,
-            ),
-
-            Direction::Left => (
-                draw_x + size * 0.25,
-                draw_y + size * 0.30,
-
-                draw_x + size * 0.25,
-                draw_y + size * 0.70,
-            ),
-
-            Direction::Right => (
-                draw_x + size * 0.75,
-                draw_y + size * 0.30,
-
-                draw_x + size * 0.75,
-                draw_y + size * 0.70,
-            ),
-        };
-
-        // Occasional blink
-        let blink =
-            (get_time() * 2.5).sin() > 0.97;
-
-        if blink {
-            draw_line(
-                eye1_x - eye_radius,
-                eye1_y,
-                eye1_x + eye_radius,
-                eye1_y,
-                2.0,
-                BLACK,
-            );
-
-            draw_line(
-                eye2_x - eye_radius,
-                eye2_y,
-                eye2_x + eye_radius,
-                eye2_y,
-                2.0,
-                BLACK,
-            );
-        } else {
-            // White eyeballs
-            draw_circle(
-                eye1_x,
-                eye1_y,
-                eye_radius * 1.6,
-                WHITE,
-            );
-
-            draw_circle(
-                eye2_x,
-                eye2_y,
-                eye_radius * 1.6,
-                WHITE,
-            );
-
-            // Pupils
-            draw_circle(
-                eye1_x,
-                eye1_y,
-                eye_radius,
-                BLACK,
-            );
-
-            draw_circle(
-                eye2_x,
-                eye2_y,
-                eye_radius,
-                BLACK,
-            );
-        }
-    }
+                    draw_circle(eye1_x, eye1_y, eye_radius, BLACK);
+                    draw_circle(eye2_x, eye2_y, eye_radius, BLACK);
+                }
+            }
         }
 
+        // --- FOOD ---
         let (fx, fy) =
             grid.to_screen(self.food.0 as f32, self.food.1 as f32);
 
@@ -494,8 +512,7 @@ impl Game {
             particle.draw();
         }
 
-        let pulse =
-            (get_time().sin() * 1.5 + 1.5) as f32;
+        let pulse = (get_time().sin() * 1.5 + 1.5) as f32;
 
         draw_rectangle(
             fx + 2.0 - pulse,
@@ -506,8 +523,7 @@ impl Game {
         );
 
         ui::draw_score(self.score);
-
         ui::draw_fps();
-    }
+    } 
 
 }
